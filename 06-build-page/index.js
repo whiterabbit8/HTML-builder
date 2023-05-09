@@ -41,11 +41,11 @@ function copyAssets() {
       fs.readdir(path.join(__dirname, 'assets', dir), (err, files) => {
         if (err) console.log(err);
         files.forEach(file => {
-          fsPromises.copyFile(path.join(__dirname, 'asssets', dir, file), path.join(projectDist, 'assets', dir, file));
+          fsPromises.copyFile(path.join(__dirname, 'assets', dir, file), path.join(projectDist, 'assets', dir, file));
         })
       })
     });
   });
 }
 
-copyAssets()
+copyAssets();
