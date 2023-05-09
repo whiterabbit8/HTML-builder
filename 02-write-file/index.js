@@ -9,9 +9,17 @@ const output = fs.createWriteStream(file);
 const rl = readline.createInterface(process.stdin, process.stdout);
 
 rl.question('Введите текст:\n', (answer) => {
-  output.write(answer + '\n');
+  if (answer === 'exit') {
+    rl.close();
+  } else {
+    output.write(answer + '\n');
+  }
   rl.on('line', (input) => {
-    output.write(input + '\n');
+    if (input === 'exit') {
+      rl.close();
+    } else {
+      output.write(input + '\n');
+    }
   });
 });
 
