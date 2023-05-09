@@ -7,6 +7,9 @@ const projectDist = path.join(__dirname, 'project-dist');
 fs.mkdir(projectDist, { recursive: true }, err => {
   if (err) console.log(err);
 });
+createCss();
+copyAssets();
+createHtml();
 
 function createCss() {
   const outputCss = fs.createWriteStream(path.join(projectDist, 'style.css'));
@@ -14,18 +17,13 @@ function createCss() {
   fs.readdir(path.join(__dirname, 'styles'), {withFileTypes: true}, (err, files) => {
     if (err) console.log(err);
     files.forEach(file => {
-      if (!file.isDirectory()) {
-        const type = path.extname(file.name);
-        if (type === '.css') {
-          const input = fs.createReadStream(path.join(__dirname, 'styles', file.name), 'utf-8');
-          input.on('data', chunk => outputCss.write(chunk));
-        }
+      if (!file.isDirectory() && path.extname(file.name) === '.css') {
+        const input = fs.createReadStream(path.join(__dirname, 'styles', file.name), 'utf-8');
+        input.on('data', chunk => outputCss.write(chunk));
       }
     });
   });
 }
-
-createCss();
 
 function copyAssets() {
   fs.mkdir(path.join(projectDist, 'assets'), { recursive: true }, (err) => {
@@ -42,10 +40,29 @@ function copyAssets() {
         if (err) console.log(err);
         files.forEach(file => {
           fsPromises.copyFile(path.join(__dirname, 'assets', dir, file), path.join(projectDist, 'assets', dir, file));
-        })
-      })
+        });
+      });
     });
   });
 }
 
-copyAssets();
+function createHtml() {
+  fs.readFile(path.join(__dirname, 'template.html'), 'utf-8', (err, data) => {
+    if (err) console.log(err);
+
+    fs.readdir(path.join(__dirname, 'components'), { withFileTypes: true }, (err, files) => {
+      if (err) console.log(err);
+      files.forEach(file => {
+        if (!file.isDirectory() && path.extname(file.name) === '.html') {
+          fs.readFile(path.join(__dirname, 'components', file.name), 'utf-8', (err, compData) => {
+            if (err) console.log(err);
+            data = data.replace(`{{${file.name.split('.')[0]}}}`, compData);
+            fs.writeFile(path.join(projectDist, 'index.html'), data, (err) => {
+              if (err) console.log(err);
+            });
+          });
+        }
+      });
+    });
+  });
+}
