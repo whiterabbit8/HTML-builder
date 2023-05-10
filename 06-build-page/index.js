@@ -47,22 +47,20 @@ function copyAssets() {
 }
 
 function createHtml() {
-  fs.readFile(path.join(__dirname, 'template.html'), 'utf-8', (err, data) => {
-    if (err) console.log(err);
+  fsPromises.readFile(path.join(__dirname, 'template.html'), 'utf-8')
+    .then((data) => {
 
-    fs.readdir(path.join(__dirname, 'components'), { withFileTypes: true }, (err, files) => {
-      if (err) console.log(err);
-      files.forEach(file => {
-        if (!file.isDirectory() && path.extname(file.name) === '.html') {
-          fs.readFile(path.join(__dirname, 'components', file.name), 'utf-8', (err, compData) => {
-            if (err) console.log(err);
-            data = data.replace(`{{${file.name.split('.')[0]}}}`, compData);
-            fs.writeFile(path.join(projectDist, 'index.html'), data, (err) => {
-              if (err) console.log(err);
-            });
-          });
-        }
+      fs.readdir(path.join(__dirname, 'components'), { withFileTypes: true }, (err, files) => {
+        if (err) console.log(err);
+        files.forEach(file => {
+          if (!file.isDirectory() && path.extname(file.name) === '.html') {
+            fsPromises.readFile(path.join(__dirname, 'components', file.name), 'utf-8')
+              .then((compData) => {
+                data = data.replace(`{{${file.name.split('.')[0]}}}`, compData);
+                fsPromises.writeFile(path.join(projectDist, 'index.html'), data);
+              });
+          }
+        });
       });
     });
-  });
 }
