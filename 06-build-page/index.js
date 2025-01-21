@@ -1,62 +1,86 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 const fsPromises = fs.promises;
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const projectDist = path.join(__dirname, 'project-dist');
 
-fs.mkdir(projectDist, { recursive: true }, err => {
-  if (err) console.log(err);
-});
-createCss();
-copyAssets();
-createHtml();
+const createCss = async () => {
+  const styles = path.join(__dirname, 'styles');
+  const mergedStyles = path.join(projectDist, 'style.css');
+  const writeStream = fs.createWriteStream(mergedStyles);
 
-function createCss() {
-  const outputCss = fs.createWriteStream(path.join(projectDist, 'style.css'));
-
-  fs.readdir(path.join(__dirname, 'styles'), {withFileTypes: true}, (err, files) => {
+  fs.readdir(styles, {withFileTypes: true}, (err, files) => {
     if (err) console.log(err);
-    files.forEach(file => {
+
+    files.forEach((file) => {
       if (!file.isDirectory() && path.extname(file.name) === '.css') {
-        const input = fs.createReadStream(path.join(__dirname, 'styles', file.name), 'utf-8');
-        input.on('data', chunk => outputCss.write(chunk));
+        const readStream = fs.createReadStream(path.join(styles, file.name), 'utf-8');
+        readStream.on('data', chunk => writeStream.write(chunk));
       }
     });
   });
 }
 
-function copyAssets() {
-  fs.mkdir(path.join(projectDist, 'assets'), { recursive: true }, (err) => {
+const copyAssets = async () => {
+  const assets = path.join(__dirname, 'assets');
+  const mergedAssets = path.join(projectDist, 'assets');
+
+  fs.mkdir(mergedAssets, { recursive: true }, (err) => {
     if (err) console.log(err);
   });
 
-  fs.readdir(path.join(__dirname, 'assets'), (err, dirs) => {
+  fs.readdir(assets, (err, dirs) => {
     if (err) console.log(err);
+
     dirs.forEach((dir) => {
-      fs.mkdir(path.join(projectDist, 'assets', dir), { recursive: true }, (err) => {
+
+      fs.mkdir(path.join(mergedAssets, dir), { recursive: true }, (err) => {
         if (err) console.log(err);
       });
-      fs.readdir(path.join(__dirname, 'assets', dir), (err, files) => {
+
+      fs.readdir(path.join(assets, dir), (err, files) => {
         if (err) console.log(err);
-        files.forEach(file => {
-          fsPromises.copyFile(path.join(__dirname, 'assets', dir, file), path.join(projectDist, 'assets', dir, file));
+
+        files.forEach((file) => {
+          fs.copyFile(path.join(assets, dir, file), path.join(mergedAssets, dir, file), (err) => {
+            if (err) console.log(err);
+          });
         });
       });
     });
   });
 }
 
-async function createHtml() {
-  let templateHtml = await fsPromises.readFile(path.join(__dirname, 'template.html'), 'utf-8')
+const createHtml = async () => {
+  const template = path.join(__dirname, 'template.html');
+  const components = path.join(__dirname, 'components');
+  const index = path.join(projectDist, 'index.html');
 
-  fs.readdir(path.join(__dirname, 'components'), { withFileTypes: true }, (err, files) => {
+  let templateHtml = await fsPromises.readFile(template, 'utf-8')
+
+  fs.readdir(components, { withFileTypes: true }, (err, files) => {
     if (err) console.log(err);
-    files.forEach(async file => {
+
+    files.forEach(async (file) => {
       if (!file.isDirectory() && path.extname(file.name) === '.html') {
-        const compFile = await fsPromises.readFile(path.join(__dirname, 'components', file.name), 'utf-8');
+        const compFile = await fsPromises.readFile(path.join(components, file.name), 'utf-8');
         templateHtml = templateHtml.replace(`{{${file.name.split('.')[0]}}}`, compFile);
-        await fsPromises.writeFile(path.join(projectDist, 'index.html'), templateHtml);
+        await fsPromises.writeFile(index, templateHtml);
       }
     });
   });
 }
+
+const bulidPage = async () => {
+  fs.mkdir(projectDist, { recursive: true }, (err) => {
+    if (err) console.log(err);
+  });
+  await createCss();
+  await copyAssets();
+  await createHtml();
+}
+
+await bulidPage();
